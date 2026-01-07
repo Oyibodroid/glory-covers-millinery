@@ -1,11 +1,57 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, Truck, Shield, RefreshCw } from "lucide-react";
-import { products } from "../../data/products";
 import ProductCard from "../../components/ProductCard/ProductCard";
+import productsService from "../../services/productsService";
 
 const HomePage = () => {
-  const featuredProducts = products.filter((p) => p.featured);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadFeaturedProducts = async () => {
+      setLoading(true);
+      const result = await productsService.getFeaturedProducts();
+
+      if (result.success) {
+        setFeaturedProducts(result.products);
+      } else {
+        setError(result.error);
+      }
+      setLoading(false);
+    };
+
+    loadFeaturedProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">Error: {error}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-rose-600 text-white px-4 py-2 rounded"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -44,11 +90,17 @@ const HomePage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {featuredProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No featured products found</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
 
           <div className="text-center mt-12">
             <Link

@@ -1,26 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { products, categories } from "../../data/products";
 import ProductCard from "../../components/ProductCard/ProductCard";
+import { productsService } from "../../services/productsService";
 
 const ShopPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams] = useSearchParams();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   const selectedCategory = searchParams.get("category") || "All";
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "All" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      const result = await productsService.getProductsByCategory(selectedCategory);
+      
+      if (result.success) {
+        setProducts(result.products);
+      } else {
+        setError(result.error);
+      }
+      setLoading(false);
+    };
+    
+    loadProducts();
+  }, [selectedCategory]);
 
-  const handleCategoryChange = (category) => {
-    setSearchParams(category === "All" ? {} : { category });
-  };
+  // Get categories (hardcoded for now, will fetch from Firestore later)
+  const categories = [
+    { id: 1, name: "All", value: "All" },
+    { id: 2, name: "Fascinators", value: "Fascinators" },
+    { id: 3, name: "Hats", value: "Hats" },
+    { id: 4, name: "Headpieces", value: "Headpieces" },
+    { id: 5, name: "Crowns", value: "Crowns" },
+    { id: 6, name: "Headbands", value: "Headbands" },
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">Error: {error}</div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-rose-600 text-white px-4 py-2 rounded"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -43,30 +85,19 @@ const ShopPage = () => {
               <h3 className="font-semibold mb-4">Categories</h3>
               <div className="space-y-2">
                 {categories.map((category) => (
-                  <button
+                  <a
                     key={category.id}
-                    onClick={() => handleCategoryChange(category.value)}
-                    className={`block w-full text-left py-2 px-3 rounded transition ${
+                    href={`/shop?category=${category.value}`}
+                    className={`block py-2 px-3 rounded transition ${
                       selectedCategory === category.value
                         ? "bg-rose-50 text-rose-600"
                         : "hover:bg-gray-50"
                     }`}
                   >
                     {category.name}
-                  </button>
+                  </a>
                 ))}
               </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="font-semibold mb-4">Search</h3>
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-rose-600"
-              />
             </div>
           </div>
 
@@ -74,21 +105,21 @@ const ShopPage = () => {
           <div className="flex-1">
             <div className="mb-6 flex justify-between items-center">
               <p className="text-gray-600">
-                {filteredProducts.length} products
+                {products.length} product{products.length !== 1 ? 's' : ''}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-
-            {filteredProducts.length === 0 && (
+            {products.length === 0 ? (
               <div className="text-center py-16">
                 <p className="text-gray-500 text-lg">
-                  No products found matching your criteria.
+                  No products found in this category.
                 </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
               </div>
             )}
           </div>
