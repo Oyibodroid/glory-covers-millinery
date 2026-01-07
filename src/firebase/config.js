@@ -7,7 +7,7 @@ import { getStorage } from "firebase/storage";
 // Replace with your actual config from Firebase Console
 const firebaseConfig = {
   apiKey: "AIzaSyCF8fCQf09_0i1x7s18DuHuZ6PQbEFjPe0",
-  authDomain: "glory-covers.firebaseapp.com",
+  authDomain: "glory-covers-millinery.vercel.app",
   projectId: "glory-covers",
   storageBucket: "glory-covers.firebasestorage.app",
   messagingSenderId: "830814355256",
